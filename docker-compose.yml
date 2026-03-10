@@ -5,11 +5,15 @@ services:
     container_name: qbittorrent-webdav
     restart: unless-stopped
     environment:
-      - QBT_USER=myqbtuser
+      - QBT_USER=admin
       - PORT=8080
-      - WEBDAV_USER=mywebdavuser
+      - WEBDAV_USER=admin
       - WEBDAV_PASS=mypassword
       - TZ=Asia/Shanghai
+      
+      # Bark 通知环境变量
+      - BARK_SERVER=https://api.day.app
+      - BARK_KEY=您的Bark设备Key请填在这里
     ports:
       - "8080:8080" # Caddy 统一代理端口 (同时包含 WebUI 和 WebDAV)
       - "6881:6881" # BT TCP
