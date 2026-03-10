@@ -34,7 +34,6 @@ fi
 # ==========================================
 if [ ! -f "$QBT_CONFIG_FILE" ]; then
     echo "Creating default qBittorrent configuration..."
-    # 注入环境变量 CURRENT_USER 和 CURRENT_PORT
     cat <<EOF > "$QBT_CONFIG_FILE"
 [BitTorrent]
 Session\\DefaultSavePath=/data/downloads
@@ -63,6 +62,12 @@ else
     else
         sed -i "/\[Preferences\]/a WebUI\\\\Username=${CURRENT_USER}" "$QBT_CONFIG_FILE"
     fi
+    
+    # ==========================================
+    # ★ 新增：自动解除 IP 封禁，防止 PaaS 网关被 Ban 导致死锁
+    # ==========================================
+    echo "Clearing any Banned IPs to prevent lockout..."
+    sed -i '/BannedIPs=/d' "$QBT_CONFIG_FILE"
 fi
 
 # ==========================================
