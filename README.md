@@ -68,7 +68,7 @@
 version: "3.8"
 services:
   qbittorrent:
-    image: ghcr.io/your-github-username/your-repo-name:latest
+    image: ghcr.io/workerspages/qbittorrent-rclone:latest
     container_name: qbittorrent-webdav
     restart: unless-stopped
     environment:
