@@ -35,7 +35,7 @@ fi
 NOTIFY_SCRIPT="/data/config/qBittorrent/config/notify.sh"
 echo "Generating Bark notification script..."
 
-# 将容器启动时的环境变量直接硬编码注入到脚本顶部，解决 qBittorrent 子进程丢失环境变量的问题
+# 将容器启动时的环境变量直接硬编码注入到脚本顶部
 cat << EOF > "$NOTIFY_SCRIPT"
 #!/bin/sh
 BARK_SERVER="${BARK_SERVER}"
@@ -67,8 +67,8 @@ fi
 # 清理自建服务器 URL 末尾的多余斜杠 (防止拼接出错)
 SERVER=$(echo "$BARK_SERVER" | sed 's/\/$//')
 
-# 发送 POST 请求并记录结果 (使用 URL 编码确保包含空格和符号的名称不会报错)
-RESPONSE=$(curl -k -s -X POST -d "title=qBittorrent 下载完成" --data-urlencode "body=${TORRENT_NAME}" "${SERVER}/${BARK_KEY}")
+# 发送 POST 请求并记录结果 (修复了含有空格可能导致的 400 错误，采用标准的 URL-encode 传参)
+RESPONSE=$(curl -k -s -X POST "${SERVER}/${BARK_KEY}" --data-urlencode "title=qBittorrent 下载完成" --data-urlencode "body=${TORRENT_NAME}")
 echo "Bark API Response: ${RESPONSE}" >> "$LOG_FILE"
 EOF
 
@@ -91,7 +91,9 @@ FileLogger\\Path=/data/config/qBittorrent/data/logs
 
 [AutoRun]
 Enabled=true
-Program=$NOTIFY_SCRIPT "%N"
+Program=sh $NOTIFY_SCRIPT "%N"
+OnTorrentFinished\\Enabled=true
+OnTorrentFinished\\Program=sh $NOTIFY_SCRIPT "%N"
 
 [BitTorrent]
 Session\\AddExtensionToIncompleteFiles=true
@@ -182,12 +184,20 @@ else
     # 自动解除 IP 封禁
     sed -i '/BannedIPs=/d' "$QBT_CONFIG_FILE"
 
-    # 动态注入或更新外部程序执行 (确保覆盖旧配置时也能启用 Bark 通知)
+    # 动态注入或更新外部程序执行 (兼容新老版本 qBittorrent，并显式调用 sh 避免不执行)
     if grep -q "^\[AutoRun\]" "$QBT_CONFIG_FILE"; then
-        sed -i "s|^Program=.*|Program=${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
+        sed -i "s|^Program=.*|Program=sh ${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
         sed -i "s/^Enabled=false/Enabled=true/g" "$QBT_CONFIG_FILE"
+        
+        # 兼容最新版配置字段
+        if grep -q "^OnTorrentFinished\\\\Program=" "$QBT_CONFIG_FILE"; then
+            sed -i "s|^OnTorrentFinished\\\\Program=.*|OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
+            sed -i "s/^OnTorrentFinished\\\\Enabled=false/OnTorrentFinished\\\\Enabled=true/g" "$QBT_CONFIG_FILE"
+        else
+            sed -i "/\[AutoRun\]/a OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"\nOnTorrentFinished\\\\Enabled=true" "$QBT_CONFIG_FILE"
+        fi
     else
-        echo -e "\n[AutoRun]\nEnabled=true\nProgram=${NOTIFY_SCRIPT} \"%N\"" >> "$QBT_CONFIG_FILE"
+        echo -e "\n[AutoRun]\nEnabled=true\nProgram=sh ${NOTIFY_SCRIPT} \"%N\"\nOnTorrentFinished\\\\Enabled=true\nOnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"" >> "$QBT_CONFIG_FILE"
     fi
 fi
 
