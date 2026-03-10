@@ -40,10 +40,9 @@ if [ ! -f "$QBT_CONFIG_FILE" ]; then
 Session\\DefaultSavePath=/data/downloads
 Session\\Port=6881
 Session\\UseUPnP=false
-
 Session\AddTrackersFromURLEnabled=true
 Session\AdditionalTrackersURL=https://cf.trackerslist.com/all.txt
-Session\CheckingMemUsageSize=32
+Session\DiskCacheSize=32
 Session\MaxConnections=500
 Session\MaxConnectionsPerTorrent=100
 
