@@ -35,8 +35,15 @@ fi
 NOTIFY_SCRIPT="/data/config/qBittorrent/config/notify.sh"
 echo "Generating Bark notification script..."
 
-cat << 'EOF' > "$NOTIFY_SCRIPT"
+# 将容器启动时的环境变量直接硬编码注入到脚本顶部，解决 qBittorrent 子进程丢失环境变量的问题
+cat << EOF > "$NOTIFY_SCRIPT"
 #!/bin/sh
+BARK_SERVER="${BARK_SERVER}"
+BARK_KEY="${BARK_KEY}"
+EOF
+
+# 追加其余核心逻辑（使用单引号闭合 EOF，保留脚本内的变量符号）
+cat << 'EOF' >> "$NOTIFY_SCRIPT"
 TORRENT_NAME="$1"
 LOG_FILE="/data/downloads/bark_notify.log"
 
