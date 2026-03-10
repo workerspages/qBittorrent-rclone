@@ -23,9 +23,9 @@ chmod -R 777 /data
 
 QBT_CONFIG_FILE="/data/config/qBittorrent/config/qBittorrent.conf"
 
-# 自动检测并删除由于缺少反斜杠导致的错误配置文件
-if grep -q "WebUIPassword" "$QBT_CONFIG_FILE" 2>/dev/null; then
-    echo "Detected corrupted config. Resetting..."
+# 自动检测并删除包含旧版损坏/残缺 Hash 的配置文件
+if grep -q "WebUIPassword" "$QBT_CONFIG_FILE" 2>/dev/null || grep -q "O1QdXg2lfi5P1hGWe1Z2A==" "$QBT_CONFIG_FILE" 2>/dev/null; then
+    echo "Detected corrupted or truncated config. Resetting..."
     rm -f "$QBT_CONFIG_FILE"
 fi
 
@@ -34,7 +34,7 @@ fi
 # ==========================================
 if [ ! -f "$QBT_CONFIG_FILE" ]; then
     echo "Creating default qBittorrent configuration..."
-    # 这里的反斜杠已经全部加倍，防止被 bash 吞噬
+    # 反斜杠已加倍，并使用了完全正确的 88 位 adminadmin Hash
     cat <<EOF > "$QBT_CONFIG_FILE"
 [BitTorrent]
 Session\\DefaultSavePath=/data/downloads
@@ -43,7 +43,7 @@ Session\\DefaultSavePath=/data/downloads
 Downloads\\SavePath=/data/downloads
 WebUI\\Port=${QBT_INTERNAL_PORT}
 WebUI\\Username=${CURRENT_USER}
-WebUI\\Password_PBKDF2="@ByteArray(ARQ77eY1NUZaQsuDHbIMCA==:0WMRkYTUWVT9wVvdDtHAjU9b3b7uB8O1QdXg2lfi5P1hGWe1Z2A==)"
+WebUI\\Password_PBKDF2="@ByteArray(ARQ77eY1NUZaQsuDHbIMCA==:0WMRkYTUWVT9wVvdDtHAjU9b3b7uB8NR1Gur2hmQCvCDpm39Q+PsJRJPaCU51dEiz+dTzh8qbPsL8WkFljQYFQ==)"
 EOF
     echo "Initial credentials set to: ${CURRENT_USER} / adminadmin"
 else
