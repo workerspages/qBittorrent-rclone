@@ -41,6 +41,13 @@ Session\\DefaultSavePath=/data/downloads
 Session\\Port=6881
 Session\\UseUPnP=false
 
+Session\AddTrackersFromURLEnabled=true
+Session\AdditionalTrackersURL=https://cf.trackerslist.com/all.txt
+Session\CheckingMemUsageSize=32
+Session\MaxConnections=500
+Session\MaxConnectionsPerTorrent=100
+
+
 [Preferences]
 Downloads\\SavePath=/data/downloads
 WebUI\\Port=${QBT_INTERNAL_PORT}
@@ -50,16 +57,10 @@ WebUI\\Locale=zh
 General\\Locale=zh
 Connection\\PortRangeMin=6881
 Connection\\UPnP=false
-Connection\\MaxConnections=2000
-Connection\\MaxConnectionsPerTorrent=500
-Connection\\MaxUploads=20
-Connection\\MaxUploadsPerTorrent=4
 Bittorrent\\DHT=true
 Bittorrent\\PeX=true
 Bittorrent\\LSD=true
 Bittorrent\\Encryption=0
-Advanced\\trackerListUrl=https://cf.trackerslist.com/all.txt
-Advanced\\trackerListEnable=true
 EOF
     echo "Initial credentials set to: ${CURRENT_USER} / adminadmin"
     echo "Optimized settings applied: Port 6881, 2000 Connections, Chinese UI, Auto-Trackers."
