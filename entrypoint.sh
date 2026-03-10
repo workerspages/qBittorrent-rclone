@@ -6,33 +6,41 @@ echo "Initializing PaaS Environment Config & Permissions..."
 echo "================================================="
 
 # ==========================================
-# 0. 确保目录结构存在并修复权限 (终极修复方案)
+# 0. 确保目录结构存在并修复权限
 # ==========================================
-# 即使 PaaS 挂载了空的持久化磁盘，这里也会自动建好目录
 mkdir -p /data/downloads
 mkdir -p /data/config/qBittorrent/config
 mkdir -p /data/rclone
 
-# 强制赋予 /data 目录最高读写权限 (777)，彻底解决 PaaS 挂载卷权限冲突导致的 Permission denied 问题
 echo "Fixing directory permissions for /data..."
 chmod -R 777 /data
 
 QBT_CONFIG_FILE="/data/config/qBittorrent/config/qBittorrent.conf"
 
 # ==========================================
-# 1. 自动配置 qBittorrent (解决无终端痛点)
+# 1. 自动修复上一版本的配置 Bug
+# ==========================================
+# 检测如果配置文件中存在被吞掉反斜杠的错误字段，直接删除让其重新生成
+if grep -q "WebUIPassword" "$QBT_CONFIG_FILE" 2>/dev/null; then
+    echo "Detected corrupted config from previous version. Resetting..."
+    rm -f "$QBT_CONFIG_FILE"
+fi
+
+# ==========================================
+# 2. 自动配置 qBittorrent
 # ==========================================
 if [ ! -f "$QBT_CONFIG_FILE" ]; then
     echo "Creating default qBittorrent configuration..."
+    # 注意这里使用了双反斜杠 \\ 来防止被 bash 吞噬
     cat <<EOF > "$QBT_CONFIG_FILE"
 [BitTorrent]
-Session\DefaultSavePath=/data/downloads
+Session\\DefaultSavePath=/data/downloads
 
 [Preferences]
-Downloads\SavePath=/data/downloads
-WebUI\Port=${PORT}
-WebUI\Username=admin
-WebUI\Password_PBKDF2="@ByteArray(ARQ77eY1NUZaQsuDHbIMCA==:0WMRkYTUWVT9wVvdDtHAjU9b3b7uB8O1QdXg2lfi5P1hGWe1Z2A==)"
+Downloads\\SavePath=/data/downloads
+WebUI\\Port=${PORT}
+WebUI\\Username=admin
+WebUI\\Password_PBKDF2="@ByteArray(ARQ77eY1NUZaQsuDHbIMCA==:0WMRkYTUWVT9wVvdDtHAjU9b3b7uB8O1QdXg2lfi5P1hGWe1Z2A==)"
 EOF
     echo "Initial credentials set to: admin / adminadmin"
     echo "Default save path permanently linked to: /data/downloads"
@@ -48,7 +56,7 @@ else
 fi
 
 # ==========================================
-# 2. 启动 WebDAV 服务 (后台运行)
+# 3. 启动 WebDAV 服务 (后台运行)
 # ==========================================
 echo "Starting WebDAV on port ${WEBDAV_PORT} with user: ${WEBDAV_USER}"
 rclone serve webdav /data/downloads \
@@ -58,7 +66,7 @@ rclone serve webdav /data/downloads \
     --vfs-cache-mode writes &
 
 # ==========================================
-# 3. 启动 qBittorrent (前台运行，占据主进程)
+# 4. 启动 qBittorrent (前台运行)
 # ==========================================
 echo "Starting qBittorrent Enhanced Edition..."
 exec qbittorrent-nox --profile="/data/config"
