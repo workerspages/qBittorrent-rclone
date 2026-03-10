@@ -2,21 +2,26 @@
 set -e
 
 echo "================================================="
-echo "Initializing PaaS Environment Config..."
+echo "Initializing PaaS Environment Config & Permissions..."
 echo "================================================="
 
-# 确保目录结构存在 (防止挂载空数据卷导致目录丢失)
+# ==========================================
+# 0. 确保目录结构存在并修复权限 (终极修复方案)
+# ==========================================
+# 即使 PaaS 挂载了空的持久化磁盘，这里也会自动建好目录
 mkdir -p /data/downloads
 mkdir -p /data/config/qBittorrent/config
 mkdir -p /data/rclone
+
+# 强制赋予 /data 目录最高读写权限 (777)，彻底解决 PaaS 挂载卷权限冲突导致的 Permission denied 问题
+echo "Fixing directory permissions for /data..."
+chmod -R 777 /data
 
 QBT_CONFIG_FILE="/data/config/qBittorrent/config/qBittorrent.conf"
 
 # ==========================================
 # 1. 自动配置 qBittorrent (解决无终端痛点)
 # ==========================================
-# 如果配置文件不存在，初始化它并写入默认凭据和默认下载路径。
-# 强制将下载路径写入 /data/downloads，确保与 WebDAV 完美对接
 if [ ! -f "$QBT_CONFIG_FILE" ]; then
     echo "Creating default qBittorrent configuration..."
     cat <<EOF > "$QBT_CONFIG_FILE"
@@ -45,7 +50,6 @@ fi
 # ==========================================
 # 2. 启动 WebDAV 服务 (后台运行)
 # ==========================================
-# 严格限定访问目录为 /data/downloads
 echo "Starting WebDAV on port ${WEBDAV_PORT} with user: ${WEBDAV_USER}"
 rclone serve webdav /data/downloads \
     --addr :${WEBDAV_PORT} \
