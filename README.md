@@ -105,7 +105,7 @@ services:
 WebDAV 服务挂载在 `/webdav` 路径下。请在本地电脑终端运行 `rclone config`，按以下参数配置：
 
 * 新建远端类型 (Type)：`webdav`
-* **URL 输入**：`https://my-app.koyeb.app/webdav` (**注意：必须带有 `/webdav` 后缀！**)
+* **URL 输入**：`https://my-app.koyeb.app/webdav/` (**注意：必须带有 `/webdav/` 后缀！**)
 * Vendor 选择：`other`
 * User 输入：您设置的 `WEBDAV_USER`
 * Password 输入：您设置的 `WEBDAV_PASS`
