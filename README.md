@@ -32,8 +32,8 @@
 | `WEBDAV_USER` | `admin` | WebDAV 服务的登录用户名，**强烈建议修改**。 |
 | `WEBDAV_PASS` | `password` | WebDAV 服务的登录密码，**强烈建议修改**。 |
 | `TZ` | `Asia/Shanghai` | 容器时区。 |
-| `BARK_SERVER` | `--` | Bark通知 服务器地址。 |
-| `BARK_KEY` | `--` | Bark 密钥。 |
+| `BARK_SERVER` | `https://api.day.app` | Bark通知 服务器地址。 |
+| `BARK_KEY` | `您的Bark设备Key请填在这里` | Bark 密钥。 |
 
 *(注：由于采用了单端口代理架构，之前的 `WEBDAV_PORT` 变量已弃用，内部已自动接管。)*
 
