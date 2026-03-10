@@ -107,7 +107,7 @@ WebUI\\Username=admin
 
 [RSS]
 AutoDownloader\\\\DownloadRepacks=true
-AutoDownloader\\\\SmartEpisodeFilter=s(\\\\d+)e(\\\\d+), (\\\\d+)x(\\\\d+), "(\\\\d{4}[.\\\\-]\\\\d{1,2}[.\\\\-]\\\\d{1,2})", "(\\d{1,2}[.\\-]\\d{1,2}[.\\-]\\d{4})"
+AutoDownloader\\\\SmartEpisodeFilter=s(\\\\d+)e(\\\\d+), (\\\\d+)x(\\\\d+), "(\\\\d{4}[.\\\\-]\\\\d{1,2}[.\\\\-]\\\\d{1,2})", "(\\\\d{1,2}[.\\\\-]\\\\d{1,2}[.\\-]\\\\d{4})"
 EOF
     echo "Initial credentials set to: ${CURRENT_USER} / adminadmin"
     echo "Optimized settings applied: Port 6881, 2000 Connections, Chinese UI, Auto-Trackers."
