@@ -106,8 +106,8 @@ WebUI\\Port=18080
 WebUI\\Username=admin
 
 [RSS]
-AutoDownloader\\DownloadRepacks=true
-AutoDownloader\\SmartEpisodeFilter=s(\\d+)e(\\d+), (\\d+)x(\\d+), "(\\d{4}[.\\-]\\d{1,2}[.\\-]\\d{1,2})", "(\\d{1,2}[.\\-]\\d{1,2}[.\\-]\\d{4})"
+AutoDownloader\\\\DownloadRepacks=true
+AutoDownloader\\\\SmartEpisodeFilter=s(\\\\d+)e(\\\\d+), (\\\\d+)x(\\\\d+), "(\\\\d{4}[.\\\\-]\\\\d{1,2}[.\\\\-]\\\\d{1,2})", "(\\d{1,2}[.\\-]\\d{1,2}[.\\-]\\d{4})"
 EOF
     echo "Initial credentials set to: ${CURRENT_USER} / adminadmin"
     echo "Optimized settings applied: Port 6881, 2000 Connections, Chinese UI, Auto-Trackers."
@@ -148,7 +148,7 @@ EOF
 # 3. 启动内部后台服务 (qBittorrent & Rclone)
 # ==========================================
 echo "Starting qBittorrent Enhanced Edition (Background)..."
-qbittorrent-nox --profile="/data/config" &
+qbittorrent-nox --profile="/data/config" --confirm-legal-notice &
 
 echo "Starting WebDAV on internal port ${WEBDAV_INTERNAL_PORT} (Background)..."
 rclone serve webdav /data/downloads \
