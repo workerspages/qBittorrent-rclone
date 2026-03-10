@@ -134,6 +134,77 @@ Fork 或克隆此仓库后：
 
 ---
 ## 本地 `rclone` 的配置
+```
+Option url.
+URL of http host to connect to.
+E.g. https://example.com.
+Enter a value.
+url> https://qbittorrent-rclone.zeabur.app/webdav
+
+Option vendor.
+Name of the WebDAV site/service/software you are using.
+Choose a number from below, or type in your own value.
+Press Enter to leave empty.
+ 1 / Fastmail Files
+   \ (fastmail)
+ 2 / Nextcloud
+   \ (nextcloud)
+ 3 / Owncloud 10 PHP based WebDAV server
+   \ (owncloud)
+ 4 / ownCloud Infinite Scale
+   \ (infinitescale)
+ 5 / Sharepoint Online, authenticated by Microsoft account
+   \ (sharepoint)
+ 6 / Sharepoint with NTLM authentication, usually self-hosted or on-premises
+   \ (sharepoint-ntlm)
+ 7 / rclone WebDAV server to serve a remote over HTTP via the WebDAV protocol
+   \ (rclone)
+ 8 / Other site/service or software
+   \ (other)
+vendor> 7
+
+Option user.
+User name.
+In case NTLM authentication is used, the username should be in the format 'Domain\User'.
+Enter a value. Press Enter to leave empty.
+user> admin
+
+Option pass.
+Password.
+Choose an alternative below. Press Enter for the default (n).
+y) Yes, type in my own password
+g) Generate random password
+n) No, leave this optional password blank (default)
+y/g/n> y
+Enter the password:
+password:
+Confirm the password:
+password:
+
+Option bearer_token.
+Bearer token instead of user/pass (e.g. a Macaroon).
+Enter a value. Press Enter to leave empty.
+bearer_token>
+
+Edit advanced config?
+y) Yes
+n) No (default)
+y/n>
+
+Configuration complete.
+Options:
+- type: webdav
+- url: https://qbittorrent-rclone.zeabur.app/webdav
+- vendor: rclone
+- user: admin
+- pass: *** ENCRYPTED ***
+Keep this "paas-webdav" remote?
+y) Yes this is OK (default)
+e) Edit this remote
+d) Delete this remote
+y/e/d>
+```
+
 
 在这里，针对我们镜像中内置的 WebDAV 服务（由 rclone 提供），您有两种选择，**推荐选择第 7 项**：
 
