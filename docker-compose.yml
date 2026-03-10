@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  qbittorrent:
+    image: ghcr.io/workerspages/qbittorrent-rclone:latest
+    container_name: qbittorrent-webdav
+    restart: unless-stopped
+    environment:
+      - QBT_USER=myqbtuser
+      - PORT=8080
+      - WEBDAV_USER=mywebdavuser
+      - WEBDAV_PASS=mypassword
+      - TZ=Asia/Shanghai
+    ports:
+      - "8080:8080" # Caddy 统一代理端口 (同时包含 WebUI 和 WebDAV)
+      - "6881:6881" # BT TCP
+      - "6881:6881/udp" # BT UDP
+    volumes:
+      - ./data:/data
