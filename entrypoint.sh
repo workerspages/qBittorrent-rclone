@@ -30,11 +30,48 @@ if grep -q "WebUIPassword" "$QBT_CONFIG_FILE" 2>/dev/null || grep -q "O1QdXg2lfi
 fi
 
 # ==========================================
-# 1. 自动配置 qBittorrent (绑定内部端口与极限提速默认值)
+# 1. 生成 Bark 自动通知包装脚本 (支持自建服务器与环境变量)
+# ==========================================
+NOTIFY_SCRIPT="/data/config/qBittorrent/config/notify.sh"
+echo "Generating Bark notification script..."
+
+cat << 'EOF' > "$NOTIFY_SCRIPT"
+#!/bin/sh
+TORRENT_NAME="$1"
+LOG_FILE="/data/downloads/bark_notify.log"
+
+echo "======================================" >> "$LOG_FILE"
+echo "$(date '+%Y-%m-%d %H:%M:%S') - Task Finished: ${TORRENT_NAME}" >> "$LOG_FILE"
+
+# 检查 PaaS 环境变量是否配置
+if [ -z "$BARK_SERVER" ] || [ -z "$BARK_KEY" ]; then
+    echo "WARNING: Environment variables BARK_SERVER or BARK_KEY are not set. Skipping notification." >> "$LOG_FILE"
+    exit 0
+fi
+
+echo "Using BARK_SERVER: ${BARK_SERVER}" >> "$LOG_FILE"
+
+# 检查是否安装了 curl
+if ! command -v curl > /dev/null 2>&1; then
+    echo "ERROR: curl is not installed in this container!" >> "$LOG_FILE"
+    exit 1
+fi
+
+# 清理自建服务器 URL 末尾的多余斜杠 (防止拼接出错)
+SERVER=$(echo "$BARK_SERVER" | sed 's/\/$//')
+
+# 发送 POST 请求并记录结果 (使用 URL 编码确保包含空格和符号的名称不会报错)
+RESPONSE=$(curl -k -s -X POST -d "title=qBittorrent 下载完成" --data-urlencode "body=${TORRENT_NAME}" "${SERVER}/${BARK_KEY}")
+echo "Bark API Response: ${RESPONSE}" >> "$LOG_FILE"
+EOF
+
+chmod +x "$NOTIFY_SCRIPT"
+
+# ==========================================
+# 2. 自动配置 qBittorrent (绑定内部端口与极限提速默认值)
 # ==========================================
 if [ ! -f "$QBT_CONFIG_FILE" ]; then
 echo "Creating DEFAULT & OPTIMIZED qBittorrent configuration..."
-# 注入全部提速和本地化参数
 cat <<EOF > "$QBT_CONFIG_FILE"
 [Application]
 FileLogger\\Age=1
@@ -44,6 +81,10 @@ FileLogger\\DeleteOld=true
 FileLogger\\Enabled=true
 FileLogger\\MaxSizeBytes=66560
 FileLogger\\Path=/data/config/qBittorrent/data/logs
+
+[AutoRun]
+Enabled=true
+Program=$NOTIFY_SCRIPT "%N"
 
 [BitTorrent]
 Session\\AddExtensionToIncompleteFiles=true
@@ -117,9 +158,9 @@ AutoDownloader\\DownloadRepacks=true
 AutoDownloader\\SmartEpisodeFilter=s(\\\\d+)e(\\\\d+), (\\\\d+)x(\\\\d+), "(\\\\d{4}[.\\\\-]\\\\d{1,2}[.\\\\-]\\\\d{1,2})", "(\\\\d{1,2}[.\\\\-]\\\\d{1,2}[.\\\\-]\\\\d{4})"
 EOF
     echo "Initial credentials set to: ${CURRENT_USER} / adminadmin"
-    echo "Optimized settings applied: Port 6881, 2000 Connections, Chinese UI, Auto-Trackers."
+    echo "Optimized settings applied: Port 6881, Bark Notifications Enabled, Chinese UI."
 else
-    echo "Updating WebUI internal port and username..."
+    echo "Updating WebUI internal port, username and AutoRun script..."
     sed -i "s/^WebUI\\\\Port=.*/WebUI\\\\Port=${QBT_INTERNAL_PORT}/g" "$QBT_CONFIG_FILE"
     if ! grep -q "^WebUI\\\\Port=" "$QBT_CONFIG_FILE"; then
         sed -i "/\[Preferences\]/a WebUI\\\\Port=${QBT_INTERNAL_PORT}" "$QBT_CONFIG_FILE"
@@ -133,10 +174,18 @@ else
     
     # 自动解除 IP 封禁
     sed -i '/BannedIPs=/d' "$QBT_CONFIG_FILE"
+
+    # 动态注入或更新外部程序执行 (确保覆盖旧配置时也能启用 Bark 通知)
+    if grep -q "^\[AutoRun\]" "$QBT_CONFIG_FILE"; then
+        sed -i "s|^Program=.*|Program=${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
+        sed -i "s/^Enabled=false/Enabled=true/g" "$QBT_CONFIG_FILE"
+    else
+        echo -e "\n[AutoRun]\nEnabled=true\nProgram=${NOTIFY_SCRIPT} \"%N\"" >> "$QBT_CONFIG_FILE"
+    fi
 fi
 
 # ==========================================
-# 2. 生成 Caddy 反向代理配置 (单端口核心)
+# 3. 生成 Caddy 反向代理配置 (单端口核心)
 # ==========================================
 CADDY_CONFIG="/tmp/Caddyfile"
 echo "Generating Caddy routing on public port ${PUBLIC_PORT}..."
@@ -152,7 +201,7 @@ cat <<EOF > "$CADDY_CONFIG"
 EOF
 
 # ==========================================
-# 3. 启动内部后台服务 (qBittorrent & Rclone)
+# 4. 启动内部后台服务 (qBittorrent & Rclone)
 # ==========================================
 echo "Starting qBittorrent Enhanced Edition (Background)..."
 qbittorrent-nox --profile="/data/config" --confirm-legal-notice &
@@ -169,7 +218,7 @@ rclone serve webdav /data/downloads \
 sleep 3
 
 # ==========================================
-# 4. 启动 Caddy (前台运行，接管对外流量)
+# 5. 启动 Caddy (前台运行，接管对外流量)
 # ==========================================
 echo "Starting Caddy Reverse Proxy..."
 exec caddy run --config "$CADDY_CONFIG" --adapter caddyfile
