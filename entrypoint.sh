@@ -5,6 +5,10 @@ echo "================================================="
 echo "Initializing PaaS Environment Config & Permissions..."
 echo "================================================="
 
+# 获取环境变量，如果未在 PaaS 设置，则赋予默认值
+CURRENT_USER="${QBT_USER:-admin}"
+CURRENT_PORT="${PORT:-8080}"
+
 # ==========================================
 # 0. 确保目录结构存在并修复权限
 # ==========================================
@@ -18,40 +22,46 @@ chmod -R 777 /data
 QBT_CONFIG_FILE="/data/config/qBittorrent/config/qBittorrent.conf"
 
 # ==========================================
-# 1. 自动修复上一版本的配置 Bug
+# 1. 自动修复旧版本的配置 Bug
 # ==========================================
-# 检测如果配置文件中存在被吞掉反斜杠的错误字段，直接删除让其重新生成
 if grep -q "WebUIPassword" "$QBT_CONFIG_FILE" 2>/dev/null; then
     echo "Detected corrupted config from previous version. Resetting..."
     rm -f "$QBT_CONFIG_FILE"
 fi
 
 # ==========================================
-# 2. 自动配置 qBittorrent
+# 2. 自动配置 qBittorrent (注入环境变量)
 # ==========================================
 if [ ! -f "$QBT_CONFIG_FILE" ]; then
     echo "Creating default qBittorrent configuration..."
-    # 注意这里使用了双反斜杠 \\ 来防止被 bash 吞噬
+    # 注入环境变量 CURRENT_USER 和 CURRENT_PORT
     cat <<EOF > "$QBT_CONFIG_FILE"
 [BitTorrent]
 Session\\DefaultSavePath=/data/downloads
 
 [Preferences]
 Downloads\\SavePath=/data/downloads
-WebUI\\Port=${PORT}
-WebUI\\Username=admin
+WebUI\\Port=${CURRENT_PORT}
+WebUI\\Username=${CURRENT_USER}
 WebUI\\Password_PBKDF2="@ByteArray(ARQ77eY1NUZaQsuDHbIMCA==:0WMRkYTUWVT9wVvdDtHAjU9b3b7uB8O1QdXg2lfi5P1hGWe1Z2A==)"
 EOF
-    echo "Initial credentials set to: admin / adminadmin"
+    echo "Initial credentials set to: ${CURRENT_USER} / adminadmin"
     echo "Default save path permanently linked to: /data/downloads"
 else
-    # 如果配置文件已存在，确保 WebUI 端口与 PaaS 环境变量 $PORT 保持一致
-    echo "Updating WebUI port to ${PORT} in existing configuration..."
-    sed -i "s/^WebUI\\\\Port=.*/WebUI\\\\Port=${PORT}/g" "$QBT_CONFIG_FILE"
+    # 如果配置文件已存在，依然强制同步 PaaS 环境变量中的端口和用户名
+    echo "Updating WebUI port and username from Environment Variables..."
     
-    # 如果旧配置文件中没有 Port 字段，则追加进去
+    # 更新端口
+    sed -i "s/^WebUI\\\\Port=.*/WebUI\\\\Port=${CURRENT_PORT}/g" "$QBT_CONFIG_FILE"
     if ! grep -q "^WebUI\\\\Port=" "$QBT_CONFIG_FILE"; then
-        sed -i "/\[Preferences\]/a WebUI\\\\Port=${PORT}" "$QBT_CONFIG_FILE"
+        sed -i "/\[Preferences\]/a WebUI\\\\Port=${CURRENT_PORT}" "$QBT_CONFIG_FILE"
+    fi
+
+    # 更新用户名
+    if grep -q "^WebUI\\\\Username=" "$QBT_CONFIG_FILE"; then
+        sed -i "s/^WebUI\\\\Username=.*/WebUI\\\\Username=${CURRENT_USER}/g" "$QBT_CONFIG_FILE"
+    else
+        sed -i "/\[Preferences\]/a WebUI\\\\Username=${CURRENT_USER}" "$QBT_CONFIG_FILE"
     fi
 fi
 
