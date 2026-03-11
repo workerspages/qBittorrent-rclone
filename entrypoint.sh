@@ -22,6 +22,7 @@ echo "Fixing directory permissions for /data..."
 chmod -R 777 /data
 
 QBT_CONFIG_FILE="/data/config/qBittorrent/config/qBittorrent.conf"
+QBT_CATEGORIES_FILE="/data/config/qBittorrent/config/categories.json"
 
 # 自动检测并删除包含旧版损坏/残缺 Hash 的配置文件
 if grep -q "WebUIPassword" "$QBT_CONFIG_FILE" 2>/dev/null || grep -q "O1QdXg2lfi5P1hGWe1Z2A==" "$QBT_CONFIG_FILE" 2>/dev/null; then
@@ -82,6 +83,11 @@ if [ ! -f "$QBT_CONFIG_FILE" ]; then
     cp /defaults/qBittorrent.conf "$QBT_CONFIG_FILE"
     echo "Initial credentials set to: ${CURRENT_USER} / adminadmin"
     echo "Optimized settings applied: Port 6881, Bark Notifications Enabled, Chinese UI."
+fi
+
+if [ ! -f "$QBT_CATEGORIES_FILE" ]; then
+    echo "Copying default categories configuration..."
+    cp /defaults/categories.json "$QBT_CATEGORIES_FILE"
 fi
 
 echo "Updating WebUI internal port, username and AutoRun script based on environment variables..."
