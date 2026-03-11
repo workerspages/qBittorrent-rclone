@@ -2,6 +2,9 @@
     "驱动程序": {
         "save_path": "/data/downloads/ok/av"
     },
+    "驱动程序/上门安装": {
+        "save_path": "/data/downloads/ok/av/tanhua"
+    },
     "电影": {
         "save_path": "/data/downloads/ok/movie"
     }
