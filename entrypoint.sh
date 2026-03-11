@@ -78,129 +78,42 @@ chmod +x "$NOTIFY_SCRIPT"
 # 2. 自动配置 qBittorrent (绑定内部端口与极限提速默认值)
 # ==========================================
 if [ ! -f "$QBT_CONFIG_FILE" ]; then
-echo "Creating DEFAULT & OPTIMIZED qBittorrent configuration..."
-cat <<EOF > "$QBT_CONFIG_FILE"
-[Application]
-FileLogger\\Age=1
-FileLogger\\AgeType=1
-FileLogger\\Backup=true
-FileLogger\\DeleteOld=true
-FileLogger\\Enabled=true
-FileLogger\\MaxSizeBytes=66560
-FileLogger\\Path=/data/config/qBittorrent/data/logs
-
-[AutoRun]
-Enabled=true
-OnTorrentFinished\Enabled=true
-OnTorrentFinished\Program=sh /data/config/qBittorrent/config/notify.sh %N
-Program=sh /data/config/qBittorrent/config/notify.sh %N
-enabled=true
-program=sh /data/config/qBittorrent/config/notify.sh \"%N\"
-
-[BitTorrent]
-Session\\AddExtensionToIncompleteFiles=true
-Session\\AddTorrentStopped=false
-Session\\AddTrackersFromURLEnabled=true
-Session\\AdditionalTrackersURL=https://cf.trackerslist.com/all.txt
-Session\\AsyncIOThreadsCount=1
-Session\\AutoBanUnknownPeer=true
-Session\\BTProtocol=TCP
-Session\\ConnectionSpeed=15
-Session\\DHTEnabled=true
-Session\\DefaultSavePath=/data/downloads/ok
-Session\\DiskCacheSize=32
-Session\\DiskIOReadMode=DisableOSCache
-Session\\DiskIOWriteMode=DisableOSCache
-Session\\Encryption=0
-Session\\ExcludedFileNames=
-Session\\FilePoolSize=40
-Session\\FinishedTorrentExportDirectory="/data/downloads/torrent "
-Session\\LSDEnabled=false
-Session\\MaxConnections=100
-Session\\MaxConnectionsPerTorrent=30
-Session\\MaxUploads=10
-Session\\MaxUploadsPerTorrent=2
-Session\\PeXEnabled=true
-Session\\Port=6881
-Session\\Preallocation=false
-Session\\QueueingSystemEnabled=true
-Session\\SSL\\Port=49490
-Session\\SendBufferWatermark=2048
-Session\\ShareLimitAction=Stop
-Session\\TempPathEnabled=true
-Session\\TorrentExportDirectory="/data/downloads/torrent "
-Session\\UseUPnP=false
-
-[Core]
-AutoDeleteAddedTorrentFile=IfAdded
-
-[LegalNotice]
-Accepted=true
-
-[Meta]
-MigrationVersion=8
-
-[Network]
-PortForwardingEnabled=false
-Proxy\\HostnameLookupEnabled=false
-Proxy\\Profiles\\BitTorrent=true
-Proxy\\Profiles\\Misc=true
-Proxy\\Profiles\\RSS=true
-
-[Preferences]
-Bittorrent\\DHT=true
-Bittorrent\\Encryption=0
-Bittorrent\\LSD=false
-Bittorrent\\PeX=true
-Connection\\PortRangeMin=6881
-Connection\\ResolvePeerCountries=false
-Connection\\UPnP=false
-Downloads\\SavePath=/data/downloads
-General\\Locale=zh_CN
-MailNotification\\req_auth=true
-WebUI\\AuthSubnetWhitelist=@Invalid()
-WebUI\\Locale=zh
-WebUI\\Password_PBKDF2="@ByteArray(ARQ77eY1NUZaQsuDHbIMCA==:0WMRkYTUWVT9wVvdDtHAjU9b3b7uB8NR1Gur2hmQCvCDpm39Q+PsJRJPaCU51dEiz+dTzh8qbPsL8WkFljQYFQ==)"
-WebUI\\Port=18080
-WebUI\\Username=admin
-
-[RSS]
-AutoDownloader\\DownloadRepacks=true
-AutoDownloader\\SmartEpisodeFilter=s(\\\\d+)e(\\\\d+), (\\\\d+)x(\\\\d+), "(\\\\d{4}[.\\\\-]\\\\d{1,2}[.\\\\-]\\\\d{1,2})", "(\\\\d{1,2}[.\\\\-]\\\\d{1,2}[.\\\\-]\\\\d{4})"
-EOF
+    echo "Copying DEFAULT & OPTIMIZED qBittorrent configuration..."
+    cp /defaults/qBittorrent.conf "$QBT_CONFIG_FILE"
     echo "Initial credentials set to: ${CURRENT_USER} / adminadmin"
     echo "Optimized settings applied: Port 6881, Bark Notifications Enabled, Chinese UI."
+fi
+
+echo "Updating WebUI internal port, username and AutoRun script based on environment variables..."
+# ==== 以下代码在每次启动时都会执行，以确保环境变量的修改能实时生效 ====
+sed -i "s/^WebUI\\\\Port=.*/WebUI\\\\Port=${QBT_INTERNAL_PORT}/g" "$QBT_CONFIG_FILE"
+if ! grep -q "^WebUI\\\\Port=" "$QBT_CONFIG_FILE"; then
+    sed -i "/\[Preferences\]/a WebUI\\\\Port=${QBT_INTERNAL_PORT}" "$QBT_CONFIG_FILE"
+fi
+
+if grep -q "^WebUI\\\\Username=" "$QBT_CONFIG_FILE"; then
+    sed -i "s/^WebUI\\\\Username=.*/WebUI\\\\Username=${CURRENT_USER}/g" "$QBT_CONFIG_FILE"
 else
-    echo "Updating WebUI internal port, username and AutoRun script..."
-    sed -i "s/^WebUI\\\\Port=.*/WebUI\\\\Port=${QBT_INTERNAL_PORT}/g" "$QBT_CONFIG_FILE"
-    if ! grep -q "^WebUI\\\\Port=" "$QBT_CONFIG_FILE"; then
-        sed -i "/\[Preferences\]/a WebUI\\\\Port=${QBT_INTERNAL_PORT}" "$QBT_CONFIG_FILE"
-    fi
+    sed -i "/\[Preferences\]/a WebUI\\\\Username=${CURRENT_USER}" "$QBT_CONFIG_FILE"
+fi
 
-    if grep -q "^WebUI\\\\Username=" "$QBT_CONFIG_FILE"; then
-        sed -i "s/^WebUI\\\\Username=.*/WebUI\\\\Username=${CURRENT_USER}/g" "$QBT_CONFIG_FILE"
-    else
-        sed -i "/\[Preferences\]/a WebUI\\\\Username=${CURRENT_USER}" "$QBT_CONFIG_FILE"
-    fi
+# 自动解除 IP 封禁
+sed -i '/BannedIPs=/d' "$QBT_CONFIG_FILE"
+
+# 动态注入或更新外部程序执行 (兼容新老版本 qBittorrent，并显式调用 sh 避免不执行)
+if grep -q "^\[AutoRun\]" "$QBT_CONFIG_FILE"; then
+    sed -i "s|^Program=.*|Program=sh ${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
+    sed -i "s/^Enabled=false/Enabled=true/g" "$QBT_CONFIG_FILE"
     
-    # 自动解除 IP 封禁
-    sed -i '/BannedIPs=/d' "$QBT_CONFIG_FILE"
-
-    # 动态注入或更新外部程序执行 (兼容新老版本 qBittorrent，并显式调用 sh 避免不执行)
-    if grep -q "^\[AutoRun\]" "$QBT_CONFIG_FILE"; then
-        sed -i "s|^Program=.*|Program=sh ${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
-        sed -i "s/^Enabled=false/Enabled=true/g" "$QBT_CONFIG_FILE"
-        
-        # 兼容最新版配置字段
-        if grep -q "^OnTorrentFinished\\\\Program=" "$QBT_CONFIG_FILE"; then
-            sed -i "s|^OnTorrentFinished\\\\Program=.*|OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
-            sed -i "s/^OnTorrentFinished\\\\Enabled=false/OnTorrentFinished\\\\Enabled=true/g" "$QBT_CONFIG_FILE"
-        else
-            sed -i "/\[AutoRun\]/a OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"\nOnTorrentFinished\\\\Enabled=true" "$QBT_CONFIG_FILE"
-        fi
+    # 兼容最新版配置字段
+    if grep -q "^OnTorrentFinished\\\\Program=" "$QBT_CONFIG_FILE"; then
+        sed -i "s|^OnTorrentFinished\\\\Program=.*|OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
+        sed -i "s/^OnTorrentFinished\\\\Enabled=false/OnTorrentFinished\\\\Enabled=true/g" "$QBT_CONFIG_FILE"
     else
-        echo -e "\n[AutoRun]\nEnabled=true\nProgram=sh ${NOTIFY_SCRIPT} \"%N\"\nOnTorrentFinished\\\\Enabled=true\nOnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"" >> "$QBT_CONFIG_FILE"
+        sed -i "/\[AutoRun\]/a OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"\nOnTorrentFinished\\\\Enabled=true" "$QBT_CONFIG_FILE"
     fi
+else
+    echo -e "\n[AutoRun]\nEnabled=true\nProgram=sh ${NOTIFY_SCRIPT} \"%N\"\nOnTorrentFinished\\\\Enabled=true\nOnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"" >> "$QBT_CONFIG_FILE"
 fi
 
 # ==========================================
