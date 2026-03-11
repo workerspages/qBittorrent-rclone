@@ -31,46 +31,76 @@ if grep -q "WebUIPassword" "$QBT_CONFIG_FILE" 2>/dev/null || grep -q "O1QdXg2lfi
 fi
 
 # ==========================================
-# 1. 生成 Bark 自动通知包装脚本 (支持自建服务器与环境变量)
+# 1. 生成 Bark 自动通知与 rclone 上传脚本
 # ==========================================
 NOTIFY_SCRIPT="/data/config/qBittorrent/config/notify.sh"
-echo "Generating Bark notification script..."
+echo "Generating notification & upload script..."
 
-# 将容器启动时的环境变量直接硬编码注入到脚本顶部
+# 1.1 如果提供了 base64 格式的 rclone 配置文件，则将其解码并写入（便于 PaaS 注入配置）
+if [ -n "$RCLONE_CONFIG_BASE64" ]; then
+    echo "Decoding base64 rclone configuration..."
+    mkdir -p /root/.config/rclone
+    echo "$RCLONE_CONFIG_BASE64" | base64 -d > /root/.config/rclone/rclone.conf
+    # 若存在，则同时拷贝到网盘挂载配置处，确保 rclone serve也能读到
+    cp /root/.config/rclone/rclone.conf /data/rclone/rclone.conf
+fi
+
+# 1.2 注入环境变量到脚本头部
 cat << EOF > "$NOTIFY_SCRIPT"
 #!/bin/sh
 BARK_SERVER="${BARK_SERVER}"
 BARK_KEY="${BARK_KEY}"
+RCLONE_DESTINATION="${RCLONE_DESTINATION}"
+RCLONE_UPLOAD_MODE="${RCLONE_UPLOAD_MODE:-copy}"
 EOF
 
-# 追加其余核心逻辑（使用单引号闭合 EOF，保留脚本内的变量符号）
+# 1.3 追加核心运行逻辑（通知 + Rclone 传输）
 cat << 'EOF' >> "$NOTIFY_SCRIPT"
 TORRENT_NAME="$1"
-LOG_FILE="/data/downloads/bark_notify.log"
+# qBittorrent 会把全路径传过来，如 /data/downloads/MyMovie
+TORRENT_PATH="$2" 
+LOG_FILE="/data/downloads/automation.log"
 
 echo "======================================" >> "$LOG_FILE"
 echo "$(date '+%Y-%m-%d %H:%M:%S') - Task Finished: ${TORRENT_NAME}" >> "$LOG_FILE"
 
-# 检查 PaaS 环境变量是否配置
-if [ -z "$BARK_SERVER" ] || [ -z "$BARK_KEY" ]; then
-    echo "WARNING: Environment variables BARK_SERVER or BARK_KEY are not set. Skipping notification." >> "$LOG_FILE"
-    exit 0
+# --- 步骤 1: 发送 Bark 通知 (如有) ---
+if [ -n "$BARK_SERVER" ] && [ -n "$BARK_KEY" ]; then
+    if command -v curl > /dev/null 2>&1; then
+        SERVER=$(echo "$BARK_SERVER" | sed 's/\/$//')
+        curl -k -s -X POST "${SERVER}/${BARK_KEY}" \
+             --data-urlencode "title=下载完成" \
+             --data-urlencode "body=${TORRENT_NAME} 已下载完毕！" > /dev/null 2>&1
+        echo "Bark notification sent." >> "$LOG_FILE"
+    fi
 fi
 
-echo "Using BARK_SERVER: ${BARK_SERVER}" >> "$LOG_FILE"
+# --- 步骤 2: Rclone 自动上传 (如有) ---
+if [ -n "$RCLONE_DESTINATION" ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting Rclone ${RCLONE_UPLOAD_MODE} to ${RCLONE_DESTINATION}" >> "$LOG_FILE"
+    
+    # 根据用户设定是 copy 还是 move
+    if [ "$RCLONE_UPLOAD_MODE" = "move" ]; then
+        rclone move "$TORRENT_PATH" "${RCLONE_DESTINATION}/${TORRENT_NAME}" -v --config /root/.config/rclone/rclone.conf >> "$LOG_FILE" 2>&1
+        RCLONE_EXIT_CODE=$?
+    else
+        rclone copy "$TORRENT_PATH" "${RCLONE_DESTINATION}/${TORRENT_NAME}" -v --config /root/.config/rclone/rclone.conf >> "$LOG_FILE" 2>&1
+        RCLONE_EXIT_CODE=$?
+    fi
 
-# 检查是否安装了 curl
-if ! command -v curl > /dev/null 2>&1; then
-    echo "ERROR: curl is not installed in this container!" >> "$LOG_FILE"
-    exit 1
+    if [ $RCLONE_EXIT_CODE -eq 0 ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - Rclone upload successful." >> "$LOG_FILE"
+        # 成功后再次发送通知
+        if [ -n "$BARK_SERVER" ] && [ -n "$BARK_KEY" ] && command -v curl > /dev/null 2>&1; then
+            SERVER=$(echo "$BARK_SERVER" | sed 's/\/$//')
+            curl -k -s -X POST "${SERVER}/${BARK_KEY}" \
+                 --data-urlencode "title=上传网盘成功" \
+                 --data-urlencode "body=${TORRENT_NAME} 已同步至 ${RCLONE_DESTINATION}" > /dev/null 2>&1
+        fi
+    else
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - ERROR: Rclone upload failed with code ${RCLONE_EXIT_CODE}." >> "$LOG_FILE"
+    fi
 fi
-
-# 清理自建服务器 URL 末尾的多余斜杠 (防止拼接出错)
-SERVER=$(echo "$BARK_SERVER" | sed 's/\/$//')
-
-# 发送 POST 请求并记录结果 (修复了含有空格可能导致的 400 错误，采用标准的 URL-encode 传参)
-RESPONSE=$(curl -k -s -X POST "${SERVER}/${BARK_KEY}" --data-urlencode "title=qBittorrent 下载完成" --data-urlencode "body=${TORRENT_NAME}")
-echo "Bark API Response: ${RESPONSE}" >> "$LOG_FILE"
 EOF
 
 chmod +x "$NOTIFY_SCRIPT"
@@ -106,20 +136,23 @@ fi
 # 自动解除 IP 封禁
 sed -i '/BannedIPs=/d' "$QBT_CONFIG_FILE"
 
-# 动态注入或更新外部程序执行 (兼容新老版本 qBittorrent，并显式调用 sh 避免不执行)
+# 动态注入或更新外部程序执行 (修改为传入 %N 和保存根路径组合的 %D/%N 以供 rclone 获取全路径)
+# qBittorrent 变量： %N (名称)  %D (保存路径，如果是多文件则是父目录，单文件则是文件所在目录)
+# 由于 %D 在不同种子类型下表现存在差异，为兼容性统一传递名称和绝对路径
+# 这里直接传入完整路径参数 %F 和名称 %N
 if grep -q "^\[AutoRun\]" "$QBT_CONFIG_FILE"; then
-    sed -i "s|^Program=.*|Program=sh ${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
+    sed -i "s|^Program=.*|Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"|g" "$QBT_CONFIG_FILE"
     sed -i "s/^Enabled=false/Enabled=true/g" "$QBT_CONFIG_FILE"
     
     # 兼容最新版配置字段
     if grep -q "^OnTorrentFinished\\\\Program=" "$QBT_CONFIG_FILE"; then
-        sed -i "s|^OnTorrentFinished\\\\Program=.*|OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"|g" "$QBT_CONFIG_FILE"
+        sed -i "s|^OnTorrentFinished\\\\Program=.*|OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"|g" "$QBT_CONFIG_FILE"
         sed -i "s/^OnTorrentFinished\\\\Enabled=false/OnTorrentFinished\\\\Enabled=true/g" "$QBT_CONFIG_FILE"
     else
-        sed -i "/\[AutoRun\]/a OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"\nOnTorrentFinished\\\\Enabled=true" "$QBT_CONFIG_FILE"
+        sed -i "/\[AutoRun\]/a OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"\nOnTorrentFinished\\\\Enabled=true" "$QBT_CONFIG_FILE"
     fi
 else
-    echo -e "\n[AutoRun]\nEnabled=true\nProgram=sh ${NOTIFY_SCRIPT} \"%N\"\nOnTorrentFinished\\\\Enabled=true\nOnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\"" >> "$QBT_CONFIG_FILE"
+    echo -e "\n[AutoRun]\nEnabled=true\nProgram=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"\nOnTorrentFinished\\\\Enabled=true\nOnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"" >> "$QBT_CONFIG_FILE"
 fi
 
 # ==========================================

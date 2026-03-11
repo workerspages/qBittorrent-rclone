@@ -34,6 +34,9 @@
 | `TZ` | `Asia/Shanghai` | 容器时区。 |
 | `BARK_SERVER` | `https://api.day.app` | Bark通知 服务器地址。 |
 | `BARK_KEY` | `您的Bark设备Key请填在这里` | Bark 密钥。 |
+| `RCLONE_DESTINATION` | *(空)* | (可选) 下载完成后**自动上传到的网盘目录**。例如: `GoogleDrive:/Movies`。配置此项后会触发自带的 rclone 自动上传。|
+| `RCLONE_UPLOAD_MODE` | `copy` | 传输模式，可选 `copy` 或 `move`。若设为 `move`，上传成功后会自动删除本地文件以释放空间。 |
+| `RCLONE_CONFIG_BASE64`| *(空)* | (可选) 为了方便在平台注入您的 rclone 配置，可以使用 `cat rclone.conf \| base64 -w 0` 获得的完整字符串填入此处，容器启动将自动识别。|
 
 *(注：由于采用了单端口代理架构，之前的 `WEBDAV_PORT` 变量已弃用，内部已自动接管。)*
 
