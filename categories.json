@@ -1,11 +1,23 @@
 {
     "驱动程序": {
-        "save_path": "/data/downloads/ok/av"
+        "save_path": "/data/downloads/ok/驱动程序"
     },
     "驱动程序/上门安装": {
-        "save_path": "/data/downloads/ok/av/tanhua"
+        "save_path": "/data/downloads/ok/驱动程序/上门安装"
     },
-    "电影": {
-        "save_path": "/data/downloads/ok/movie"
+    "影视": {
+        "save_path": "/data/downloads/ok/影视"
+    },
+    "影视/电影": {
+        "save_path": "/data/downloads/ok/影视/电影"
+    },
+    "影视/电视剧": {
+        "save_path": "/data/downloads/ok/影视/电视剧"
+    },
+    "影视/综艺": {
+        "save_path": "/data/downloads/ok/影视/综艺"
+    },
+    "影视/纪录片": {
+        "save_path": "/data/downloads/ok/影视/纪录片"
     }
 }
