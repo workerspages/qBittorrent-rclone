@@ -1,0 +1,231 @@
+[04-May-24 22:33:54] ERROR:engines.rutor:__post_init__ - [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/rutor.json'
+[04-May-24 22:36:50] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:36:56] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:37:02] DEBUG:engines.filelist:<module> - Credentials file not found. Using data from current file.
+[04-May-24 22:37:02] DEBUG:root:_login - Trying to connect using given credentials.
+[04-May-24 22:37:02] DEBUG:root:_login - https://iptorrents.com/take_login.php
+[04-May-24 22:37:02] DEBUG:root:_login - b'username=&password='
+[04-May-24 22:37:03] DEBUG:engines.filelist:__init__ - New filelist object created.
+[04-May-24 22:37:03] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:37:03] DEBUG:root:__init__ - Cpasbien URL: http://www.cpasbien.biz
+[04-May-24 22:37:08] ERROR:engines.kinozal:__post_init__ - [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/kinozal.json'
+[04-May-24 22:37:09] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:37:15] ERROR:lostfilm:create_new - Incorrect login data
+[04-May-24 22:37:15] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:37:25] ERROR:lostfilm:create_new - Captcha requested
+[04-May-24 22:37:25] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:37:36] ERROR:engines.nnmclub:__post_init__ - [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/nnmclub.json'
+[04-May-24 22:37:38] ERROR:lostfilm:create_new - Incorrect login data
+[04-May-24 22:37:39] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:37:52] ERROR:lostfilm:create_new - Captcha requested
+[04-May-24 22:37:53] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:37:56] ERROR:root:__init__ - Unable to connect using given credentials.
+[04-May-24 22:38:02] ERROR:lostfilm:create_new - Captcha requested
+[04-May-24 22:38:02] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:38:06] ERROR:root:__init__ - Unable to connect using given credentials.
+[04-May-24 22:38:10] ERROR:engines.rutracker:__post_init__ - [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/rutracker.json'
+[04-May-24 22:38:11] ERROR:lostfilm:create_new - Captcha requested
+[04-May-24 22:38:11] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:38:14] ERROR:root:__init__ - Unable to connect using given credentials.
+[04-May-24 22:38:18] ERROR:lostfilm:create_new - Captcha requested
+[04-May-24 22:38:18] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:38:23] ERROR:root:__init__ - Unable to connect using given credentials.
+[04-May-24 22:38:27] ERROR:lostfilm:create_new - Captcha requested
+[04-May-24 22:38:28] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:38:31] ERROR:root:__init__ - Unable to connect using given credentials.
+[04-May-24 22:38:36] ERROR:lostfilm:create_new - Captcha requested
+[04-May-24 22:38:36] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:38:41] ERROR:root:__init__ - Unable to connect using given credentials.
+[04-May-24 22:38:46] ERROR:lostfilm:create_new - Captcha requested
+[04-May-24 22:38:47] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:38:51] ERROR:root:__init__ - Unable to connect using given credentials.
+[04-May-24 22:38:57] ERROR:lostfilm:create_new - Captcha requested
+[04-May-24 22:38:58] CRITICAL:engines.filelist:_login - Default username! Change username!
+[04-May-24 22:39:02] ERROR:root:__init__ - Unable to connect using given credentials.
+[05-May-24 18:33:05] ERROR:lostfilm:create_new - Captcha requested
+[05-May-24 18:33:05] ERROR:lostfilm:pretty_printer - {'link': 'Error', 'name': 'Error: Captcha requested.', 'size': '0', 'seeds': -1, 'leech': -1, 'engine_url': 'https://www.lostfilm.tv', 'desc_link': 'https://www.lostfilm.tv'}
+[05-May-24 18:33:07] ERROR:root:__init__ - Unable to connect using given credentials.
+[05-May-24 18:33:27] ERROR:engines.speedapp:check_creds - An error occurred: [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/speedapp-token.json'
+[05-May-24 18:33:28] ERROR:engines.speedapp:login - HTTP Error 401: Unauthorized
+Traceback (most recent call last):
+  File "/config/qBittorrent/nova3/engines/speedapp.py", line 114, in login
+    with urllib.request.urlopen(req, timeout=5) as response:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/urllib/request.py", line 216, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/urllib/request.py", line 525, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/urllib/request.py", line 634, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/urllib/request.py", line 563, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/urllib/request.py", line 496, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.11/urllib/request.py", line 643, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[05-May-24 18:33:28] ERROR:engines.speedapp:login - Error occurred: HTTP Error 401: Unauthorized
+[05-May-24 18:33:47] CRITICAL:engines.filelist:_login - Default username! Change username!
+[07-May-24 15:15:33] ERROR:lostfilm:create_new - Captcha requested
+[07-May-24 15:15:34] CRITICAL:engines.filelist:_login - Default username! Change username!
+[07-May-24 15:15:42] ERROR:root:__init__ - Unable to connect using given credentials.
+[07-May-24 15:16:03] ERROR:root:__init__ - Unable to connect using given credentials.
+[07-May-24 15:16:12] CRITICAL:engines.filelist:_login - Default username! Change username!
+[07-May-24 15:17:10] ERROR:engines.speedapp:check_creds - An error occurred: [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/speedapp-token.json'
+[07-May-24 15:17:10] ERROR:engines.speedapp:login - HTTP Error 401: Unauthorized
+Traceback (most recent call last):
+  File "/config/qBittorrent/nova3/engines/speedapp.py", line 114, in login
+    with urllib.request.urlopen(req, timeout=5) as response:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[07-May-24 15:17:11] ERROR:engines.speedapp:login - Error occurred: HTTP Error 401: Unauthorized
+[07-May-24 15:17:44] ERROR:lostfilm:create_new - Captcha requested
+[07-May-24 15:17:44] ERROR:lostfilm:pretty_printer - {'link': 'Error', 'name': 'Error: Captcha requested.', 'size': '0', 'seeds': -1, 'leech': -1, 'engine_url': 'https://www.lostfilm.tv', 'desc_link': 'https://www.lostfilm.tv'}
+[07-May-24 17:08:05] ERROR:lostfilm:create_new - Captcha requested
+[07-May-24 17:08:05] CRITICAL:engines.filelist:_login - Default username! Change username!
+[07-May-24 17:08:10] ERROR:root:__init__ - Unable to connect using given credentials.
+[07-May-24 17:22:35] ERROR:lostfilm:create_new - Captcha requested
+[07-May-24 17:22:36] CRITICAL:engines.filelist:_login - Default username! Change username!
+[07-May-24 17:22:41] ERROR:root:__init__ - Unable to connect using given credentials.
+[07-May-24 18:05:19] ERROR:lostfilm:create_new - Captcha requested
+[07-May-24 18:05:19] CRITICAL:engines.filelist:_login - Default username! Change username!
+[07-May-24 18:05:24] ERROR:root:__init__ - Unable to connect using given credentials.
+[07-May-24 18:06:04] ERROR:lostfilm:create_new - Captcha requested
+[07-May-24 18:06:04] ERROR:lostfilm:pretty_printer - {'link': 'Error', 'name': 'Error: Captcha requested.', 'size': '0', 'seeds': -1, 'leech': -1, 'engine_url': 'https://www.lostfilm.tv', 'desc_link': 'https://www.lostfilm.tv'}
+[07-May-24 18:06:08] ERROR:root:__init__ - Unable to connect using given credentials.
+[07-May-24 18:06:28] CRITICAL:engines.filelist:_login - Default username! Change username!
+[07-May-24 18:06:55] ERROR:engines.speedapp:check_creds - An error occurred: [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/speedapp-token.json'
+[07-May-24 18:06:56] ERROR:engines.speedapp:login - HTTP Error 401: Unauthorized
+Traceback (most recent call last):
+  File "/config/qBittorrent/nova3/engines/speedapp.py", line 114, in login
+    with urllib.request.urlopen(req, timeout=5) as response:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[07-May-24 18:06:56] ERROR:engines.speedapp:login - Error occurred: HTTP Error 401: Unauthorized
+[07-May-24 19:50:23] ERROR:engines.speedapp:check_creds - An error occurred: [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/speedapp-token.json'
+[07-May-24 19:50:24] ERROR:engines.speedapp:login - HTTP Error 401: Unauthorized
+Traceback (most recent call last):
+  File "/config/qBittorrent/nova3/engines/speedapp.py", line 114, in login
+    with urllib.request.urlopen(req, timeout=5) as response:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[07-May-24 19:50:24] ERROR:engines.speedapp:login - Error occurred: HTTP Error 401: Unauthorized
+[07-May-24 19:50:40] ERROR:root:__init__ - Unable to connect using given credentials.
+[07-May-24 19:50:54] CRITICAL:engines.filelist:_login - Default username! Change username!
+[07-May-24 19:52:52] ERROR:lostfilm:create_new - Captcha requested
+[07-May-24 19:52:52] ERROR:lostfilm:pretty_printer - {'link': 'Error', 'name': 'Error: Captcha requested.', 'size': '0', 'seeds': -1, 'leech': -1, 'engine_url': 'https://www.lostfilm.tv', 'desc_link': 'https://www.lostfilm.tv'}
+[07-May-24 21:26:45] ERROR:lostfilm:create_new - Captcha requested
+[07-May-24 21:26:45] ERROR:lostfilm:pretty_printer - {'link': 'Error', 'name': 'Error: Captcha requested.', 'size': '0', 'seeds': -1, 'leech': -1, 'engine_url': 'https://www.lostfilm.tv', 'desc_link': 'https://www.lostfilm.tv'}
+[07-May-24 21:29:27] ERROR:engines.speedapp:check_creds - An error occurred: [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/speedapp-token.json'
+[07-May-24 21:29:28] ERROR:engines.speedapp:login - HTTP Error 401: Unauthorized
+Traceback (most recent call last):
+  File "/config/qBittorrent/nova3/engines/speedapp.py", line 114, in login
+    with urllib.request.urlopen(req, timeout=5) as response:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[07-May-24 21:29:28] ERROR:engines.speedapp:login - Error occurred: HTTP Error 401: Unauthorized
+[30-Jul-24 20:26:46] ERROR:lostfilm:create_new - Incorrect login data
+[30-Jul-24 20:26:47] CRITICAL:engines.filelist:_login - Default username! Change username!
+[30-Jul-24 20:26:52] ERROR:root:__init__ - Unable to connect using given credentials.
+[30-Jul-24 20:28:15] ERROR:lostfilm:create_new - Incorrect login data
+[30-Jul-24 20:28:15] ERROR:lostfilm:pretty_printer - {'link': 'Error', 'name': 'Error: Incorrect login data.', 'size': '0', 'seeds': -1, 'leech': -1, 'engine_url': 'https://www.lostfilm.tv', 'desc_link': 'https://www.lostfilm.tv'}
+[30-Jul-24 20:29:57] ERROR:engines.speedapp:check_creds - An error occurred: [Errno 2] No such file or directory: '/config/qBittorrent/nova3/engines/speedapp-token.json'
+[30-Jul-24 20:29:58] ERROR:engines.speedapp:login - HTTP Error 401: Unauthorized
+Traceback (most recent call last):
+  File "/config/qBittorrent/nova3/engines/speedapp.py", line 114, in login
+    with urllib.request.urlopen(req, timeout=5) as response:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 401: Unauthorized
+[30-Jul-24 20:29:58] ERROR:engines.speedapp:login - Error occurred: HTTP Error 401: Unauthorized
+[30-Jul-24 20:30:07] ERROR:root:__init__ - Unable to connect using given credentials.
+[30-Jul-24 20:30:36] CRITICAL:engines.filelist:_login - Default username! Change username!
