@@ -10,7 +10,7 @@ services:
       - WEBDAV_USER=admin
       - WEBDAV_PASS=mypassword
       - TZ=Asia/Shanghai
-      - MAX_CONCURRENT_FILES=3
+      - MAX_CONCURRENT_FILES=3  # 每个合集（每个独立的种子任务）中同时下载 2 个文件
       
       # Bark 通知环境变量
       - BARK_SERVER=https://api.day.app
