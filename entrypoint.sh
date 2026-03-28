@@ -142,6 +142,12 @@ fi
 # 自动解除 IP 封禁
 sed -i '/BannedIPs=/d' "$QBT_CONFIG_FILE"
 
+# 配置免除本地地址密码验证，供后台 API 调用使用
+sed -i "s/^WebUI\\\\LocalHostAuth=.*/WebUI\\\\LocalHostAuth=false/g" "$QBT_CONFIG_FILE"
+if ! grep -q "^WebUI\\\\LocalHostAuth=" "$QBT_CONFIG_FILE"; then
+    sed -i "/\[Preferences\]/a WebUI\\\\LocalHostAuth=false" "$QBT_CONFIG_FILE"
+fi
+
 # 动态注入或更新外部程序执行 (修改为传入 %N 和保存根路径组合的 %D/%N 以供 rclone 获取全路径)
 # qBittorrent 变量： %N (名称)  %D (保存路径，如果是多文件则是父目录，单文件则是文件所在目录)
 # 由于 %D 在不同种子类型下表现存在差异，为兼容性统一传递名称和绝对路径
@@ -187,6 +193,9 @@ EOF
 # ==========================================
 echo "Starting qBittorrent Enhanced Edition (Background)..."
 qbittorrent-nox --profile="/data/config" --confirm-legal-notice &
+
+echo "Starting qBittorrent completed files monitor (Background)..."
+python3 /defaults/monitor.py &
 
 echo "Starting WebDAV on internal port ${WEBDAV_INTERNAL_PORT} (Background)..."
 rclone serve webdav /data/downloads \

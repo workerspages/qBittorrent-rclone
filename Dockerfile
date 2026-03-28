@@ -8,6 +8,7 @@ ENV QBT_PROFILE=/data/config
 # 安装依赖、Rclone、Caddy，并获取最新版 qBittorrent-Enhanced-Edition
 RUN apk update && \
     apk add --no-cache bash curl unzip rclone caddy tzdata ca-certificates jq sed python3 py3-requests py3-pip && \
+    pip3 install --no-cache-dir qbittorrent-api --break-system-packages && \
     ln -sf /usr/bin/python3 /usr/bin/python && \
     mkdir -p /tmp/qbittorrent && \
     LATEST_URL=$(curl -s https://api.github.com/repos/c0re100/qBittorrent-Enhanced-Edition/releases/latest | jq -r '.assets[] | select(.name | test("x86_64-linux-musl_static.zip$")) | .browser_download_url') && \
@@ -26,6 +27,7 @@ RUN mkdir -p /data/downloads /data/config/qBittorrent/config /data/rclone /defau
 COPY qBittorrent.conf /defaults/qBittorrent.conf
 COPY categories.json /defaults/categories.json
 COPY engines /defaults/engines
+COPY monitor.py /defaults/monitor.py
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
