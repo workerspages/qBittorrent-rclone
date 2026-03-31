@@ -4,6 +4,7 @@ import os
 import json
 import qbittorrentapi
 import logging
+import shutil
 
 logging.basicConfig(
     level=logging.INFO,
@@ -14,11 +15,15 @@ qbt_port = int(os.environ.get('QBT_INTERNAL_PORT', 18080))
 scan_interval = int(os.environ.get('MONITOR_INTERVAL', 60))
 max_concurrent_files = int(os.environ.get('MAX_CONCURRENT_FILES', 0))
 
-# 新增：是否只下载视频文件的开关环境变量
+# 是否只下载视频文件的开关
 only_video_files = os.environ.get('ONLY_VIDEO_FILES', 'false').lower() == 'true'
-# 新增：自定义识别的视频格式后缀环境变量
 video_ext_str = os.environ.get('VIDEO_EXTENSIONS', '.mp4,.mkv,.avi,.rmvb,.flv,.mov,.wmv,.ts,.webm,.iso')
 video_extensions = tuple(ext.strip().lower() for ext in video_ext_str.split(',') if ext.strip())
+
+# 新增：磁盘剩余空间保护阈值（GB）。设为 0 则关闭此功能。
+# 你的服务器是100G，占用90G也就是剩余10G，这里默认设为 10.0
+min_free_space_gb = float(os.environ.get('MIN_FREE_SPACE_GB', 10.0))
+DOWNLOAD_DIR = '/data/downloads'
 
 STATE_FILE = '/data/config/qBittorrent/config/monitor_state.json'
 
@@ -55,21 +60,52 @@ def monitor_torrents():
             time.sleep(5)
 
     logging.info(f"Successfully connected to qBittorrent WebUI.")
+    
     if max_concurrent_files > 0:
         logging.info(f"Concurrent file limit is ENABLED. Max downloading files per torrent: {max_concurrent_files}")
     else:
-        logging.info("Concurrent file limit is DISABLED (MAX_CONCURRENT_FILES <= 0).")
+        logging.info("Concurrent file limit is DISABLED.")
 
-    # 打印视频过滤模式状态
     if only_video_files:
         logging.info(f"Video-only download mode is ENABLED. Allowed extensions: {video_extensions}")
-    else:
-        logging.info("Video-only download mode is DISABLED.")
+        
+    if min_free_space_gb > 0:
+        logging.info(f"Disk space protection is ENABLED. Will pause downloads if free space drops below {min_free_space_gb} GB.")
 
     state = load_state()
 
     while True:
         try:
+            # ==== 步骤 0. 磁盘空间保护监控 ====
+            if min_free_space_gb > 0:
+                # 获取下载目录所在磁盘的使用情况
+                usage = shutil.disk_usage(DOWNLOAD_DIR)
+                free_gb = usage.free / (1024 ** 3)
+                
+                if free_gb < min_free_space_gb:
+                    logging.warning(f"[Disk Alert] Free space ({free_gb:.2f} GB) is below the minimum threshold ({min_free_space_gb} GB)!")
+                    # 获取正在下载的种子
+                    downloading = qbt_client.torrents_info(status_filter='downloading')
+                    if downloading:
+                        hashes = [t.hash for t in downloading]
+                        logging.info(f"Pausing {len(hashes)} active torrent(s) to prevent disk full.")
+                        qbt_client.torrents_pause(torrent_hashes=hashes)
+                        
+                        # 记录被脚本自动暂停的种子，以便空间释放后恢复
+                        state['auto_paused_due_to_disk'] = list(set(state.get('auto_paused_due_to_disk', []) + hashes))
+                        save_state(state)
+                    
+                    time.sleep(scan_interval)
+                    continue # 空间不足时，暂停后直接跳过后续的排队与状态检查逻辑，直到空间释放
+                
+                elif 'auto_paused_due_to_disk' in state and state['auto_paused_due_to_disk']:
+                    # 如果空间恢复正常，且存在被脚本暂停的种子，则恢复它们
+                    logging.info(f"[Disk Safe] Free space ({free_gb:.2f} GB) is sufficient. Resuming {len(state['auto_paused_due_to_disk'])} previously paused torrents.")
+                    qbt_client.torrents_resume(torrent_hashes=state['auto_paused_due_to_disk'])
+                    state['auto_paused_due_to_disk'] = []
+                    save_state(state)
+            # ==================================
+
             all_torrents = qbt_client.torrents_info()
             for torrent in all_torrents:
                 # 只处理尚未完全下载完成的合集种子
@@ -105,12 +141,10 @@ def monitor_torrents():
                 if only_video_files:
                     non_video_ids = []
                     for file in files:
-                        # 只处理还在下载队列中、且未下载完成的文件
                         if file.priority != 0 and file.progress < 1.0:
                             _, ext = os.path.splitext(file.name)
                             if ext.lower() not in video_extensions:
                                 non_video_ids.append(file.index)
-                                # 修改内存变量，防止被步骤2误识别为待下载文件
                                 file.priority = 0 
                                 
                     if non_video_ids:
@@ -124,11 +158,9 @@ def monitor_torrents():
                 # ==== 步骤2. 并发下载排队控制算法 ====
                 if max_concurrent_files > 0:
                     hash_key = torrent.hash
-                    # 初次捕获：锁定用户最初期望挂载的真实下载意愿
                     if hash_key not in state:
                         state[hash_key] = {}
                         for file in files:
-                            # 如果该文件意图下载且没下完，我们暂定它为 pending，并阻止它抢网速
                             if file.priority != 0 and file.progress < 1.0:
                                 state[hash_key][str(file.index)] = 'pending'
                                 qbt_client.torrents_file_priority(
@@ -140,16 +172,13 @@ def monitor_torrents():
                             elif file.progress >= 1.0:
                                 state[hash_key][str(file.index)] = 'completed'
                             else:
-                                state[hash_key][str(file.index)] = 'ignored' # 本来就是不下载的文件（用户手动略过或非视频文件）
+                                state[hash_key][str(file.index)] = 'ignored'
                     
-                    # 计算在途正在真机抢带宽的核心活跃文件
                     active_files_indices = [f.index for f in files if f.priority != 0 and f.progress < 1.0]
 
-                    # 存在多余连接空余的话，开闸发车！
                     if len(active_files_indices) < max_concurrent_files:
                         slots_available = max_concurrent_files - len(active_files_indices)
                         
-                        # 挑选需要补充的 pending 文件按索引先后
                         pending_files = []
                         for file in files:
                             if state[hash_key].get(str(file.index)) == 'pending' and file.priority == 0 and file.progress < 1.0:
@@ -164,7 +193,6 @@ def monitor_torrents():
                                 file_ids=to_start,
                                 priority=1
                             )
-                            # 从等待池移动到执行池
                             for fid in to_start:
                                 state[hash_key][str(fid)] = 'downloading'
             
