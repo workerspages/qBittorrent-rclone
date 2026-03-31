@@ -18,13 +18,13 @@ max_concurrent_files = int(os.environ.get('MAX_CONCURRENT_FILES', 0))
 # 是否只下载视频文件的开关
 only_video_files = os.environ.get('ONLY_VIDEO_FILES', 'false').lower() == 'true'
 
-# 将你提供的最全视频格式列表作为默认值
+# 视频格式后缀列表
 video_ext_str = os.environ.get(
     'VIDEO_EXTENSIONS', 
     'mp4,mkv,avi,wmv,mov,ts,rmvb,webm,flv,f4v,m4v,mpg,mpeg,vob,m2ts,mts,3gp,rm,asf,ogv,mxf,dat'
 )
 
-# 增强版解析逻辑：自动处理大小写，并自动为没有加点(.)的后缀加上点，完美兼容用户输入的字符串
+# 解析视频格式扩展名
 video_extensions_list = []
 for ext in video_ext_str.split(','):
     ext = ext.strip().lower()
@@ -35,9 +35,13 @@ for ext in video_ext_str.split(','):
             video_extensions_list.append(ext)
 video_extensions = tuple(video_extensions_list)
 
-# 磁盘剩余空间保护阈值（GB）。设为 0 则关闭此功能。
+# 磁盘剩余空间保护阈值（GB）
 min_free_space_gb = float(os.environ.get('MIN_FREE_SPACE_GB', 10.0))
 DOWNLOAD_DIR = '/data/downloads'
+
+# 新增：是否自动恢复“文件丢失/错误”的种子（针对外部 Rclone 抽走文件的场景）
+# 默认设为 true，自动开启此功能
+auto_resume_missing = os.environ.get('AUTO_RESUME_MISSING', 'true').lower() == 'true'
 
 STATE_FILE = '/data/config/qBittorrent/config/monitor_state.json'
 
@@ -85,6 +89,9 @@ def monitor_torrents():
         
     if min_free_space_gb > 0:
         logging.info(f"Disk space protection is ENABLED. Will pause downloads if free space drops below {min_free_space_gb} GB.")
+        
+    if auto_resume_missing:
+        logging.info("Auto-resume missing/error torrents is ENABLED. Perfect for external Rclone pulling.")
 
     state = load_state()
 
@@ -92,28 +99,24 @@ def monitor_torrents():
         try:
             # ==== 步骤 0. 磁盘空间保护监控 ====
             if min_free_space_gb > 0:
-                # 获取下载目录所在磁盘的使用情况
                 usage = shutil.disk_usage(DOWNLOAD_DIR)
                 free_gb = usage.free / (1024 ** 3)
                 
                 if free_gb < min_free_space_gb:
                     logging.warning(f"[Disk Alert] Free space ({free_gb:.2f} GB) is below the minimum threshold ({min_free_space_gb} GB)!")
-                    # 获取正在下载的种子
                     downloading = qbt_client.torrents_info(status_filter='downloading')
                     if downloading:
                         hashes = [t.hash for t in downloading]
                         logging.info(f"Pausing {len(hashes)} active torrent(s) to prevent disk full.")
                         qbt_client.torrents_pause(torrent_hashes=hashes)
                         
-                        # 记录被脚本自动暂停的种子，以便空间释放后恢复
                         state['auto_paused_due_to_disk'] = list(set(state.get('auto_paused_due_to_disk', []) + hashes))
                         save_state(state)
                     
                     time.sleep(scan_interval)
-                    continue # 空间不足时，暂停后直接跳过后续的排队与状态检查逻辑，直到空间释放
+                    continue 
                 
                 elif 'auto_paused_due_to_disk' in state and state['auto_paused_due_to_disk']:
-                    # 如果空间恢复正常，且存在被脚本暂停的种子，则恢复它们
                     logging.info(f"[Disk Safe] Free space ({free_gb:.2f} GB) is sufficient. Resuming {len(state['auto_paused_due_to_disk'])} previously paused torrents.")
                     qbt_client.torrents_resume(torrent_hashes=state['auto_paused_due_to_disk'])
                     state['auto_paused_due_to_disk'] = []
@@ -122,17 +125,24 @@ def monitor_torrents():
 
             all_torrents = qbt_client.torrents_info()
             for torrent in all_torrents:
-                # 只处理尚未完全下载完成的合集种子
+                
+                # ==== 步骤 0.5 自动恢复外部拉取导致的报错 ====
+                # 当外部 Rclone 删除了文件，qBittorrent 会报 'error' 或 'missingFiles'
+                if auto_resume_missing and torrent.state in ['error', 'missingFiles']:
+                    logging.info(f"[{torrent.name}] Detected state '{torrent.state}' (likely files moved by external Rclone). Auto-resuming to continue pipeline...")
+                    qbt_client.torrents_resume(torrent_hashes=torrent.hash)
+                    # 发送恢复指令后，跳过当前种子的后续逻辑，等待下一轮扫描状态刷新后再处理排队
+                    continue
+
                 if torrent.progress >= 1.0:
                     continue
                 
-                # 若处于下载元数据状态（如刚添加的磁力链接），跳过本次处理
                 if torrent.state == 'metaDL':
                     continue
 
                 files = qbt_client.torrents_files(torrent_hash=torrent.hash)
                 
-                # ==== 步骤1. 收尾处理 (处理已经完成的文件) ====
+                # ==== 步骤1. 收尾处理 ====
                 file_ids_to_ignore = []
                 for file in files:
                     if file.progress >= 1.0 and file.priority != 0:
@@ -146,7 +156,6 @@ def monitor_torrents():
                         priority=0
                     )
                 
-                # 修改当前内存变量防止下一步将其误识别为活跃
                 for file in files:
                     if file.index in file_ids_to_ignore:
                         file.priority = 0
