@@ -14,6 +14,12 @@ qbt_port = int(os.environ.get('QBT_INTERNAL_PORT', 18080))
 scan_interval = int(os.environ.get('MONITOR_INTERVAL', 60))
 max_concurrent_files = int(os.environ.get('MAX_CONCURRENT_FILES', 0))
 
+# 新增：是否只下载视频文件的开关环境变量
+only_video_files = os.environ.get('ONLY_VIDEO_FILES', 'false').lower() == 'true'
+# 新增：自定义识别的视频格式后缀环境变量
+video_ext_str = os.environ.get('VIDEO_EXTENSIONS', '.mp4,.mkv,.avi,.rmvb,.flv,.mov,.wmv,.ts,.webm,.iso')
+video_extensions = tuple(ext.strip().lower() for ext in video_ext_str.split(',') if ext.strip())
+
 STATE_FILE = '/data/config/qBittorrent/config/monitor_state.json'
 
 conn_info = dict(
@@ -54,6 +60,12 @@ def monitor_torrents():
     else:
         logging.info("Concurrent file limit is DISABLED (MAX_CONCURRENT_FILES <= 0).")
 
+    # 打印视频过滤模式状态
+    if only_video_files:
+        logging.info(f"Video-only download mode is ENABLED. Allowed extensions: {video_extensions}")
+    else:
+        logging.info("Video-only download mode is DISABLED.")
+
     state = load_state()
 
     while True:
@@ -64,6 +76,10 @@ def monitor_torrents():
                 if torrent.progress >= 1.0:
                     continue
                 
+                # 若处于下载元数据状态（如刚添加的磁力链接），跳过本次处理
+                if torrent.state == 'metaDL':
+                    continue
+
                 files = qbt_client.torrents_files(torrent_hash=torrent.hash)
                 
                 # ==== 步骤1. 收尾处理 (处理已经完成的文件) ====
@@ -85,6 +101,26 @@ def monitor_torrents():
                     if file.index in file_ids_to_ignore:
                         file.priority = 0
 
+                # ==== 步骤1.5 只下载视频文件过滤 ====
+                if only_video_files:
+                    non_video_ids = []
+                    for file in files:
+                        # 只处理还在下载队列中、且未下载完成的文件
+                        if file.priority != 0 and file.progress < 1.0:
+                            _, ext = os.path.splitext(file.name)
+                            if ext.lower() not in video_extensions:
+                                non_video_ids.append(file.index)
+                                # 修改内存变量，防止被步骤2误识别为待下载文件
+                                file.priority = 0 
+                                
+                    if non_video_ids:
+                        logging.info(f"[{torrent.name}] Found {len(non_video_ids)} non-video files. Setting priority to 'Do not download' (0).")
+                        qbt_client.torrents_file_priority(
+                            torrent_hash=torrent.hash,
+                            file_ids=non_video_ids,
+                            priority=0
+                        )
+
                 # ==== 步骤2. 并发下载排队控制算法 ====
                 if max_concurrent_files > 0:
                     hash_key = torrent.hash
@@ -104,7 +140,7 @@ def monitor_torrents():
                             elif file.progress >= 1.0:
                                 state[hash_key][str(file.index)] = 'completed'
                             else:
-                                state[hash_key][str(file.index)] = 'ignored' # 本来就是不下载的文件（用户手动略过）
+                                state[hash_key][str(file.index)] = 'ignored' # 本来就是不下载的文件（用户手动略过或非视频文件）
                     
                     # 计算在途正在真机抢带宽的核心活跃文件
                     active_files_indices = [f.index for f in files if f.priority != 0 and f.progress < 1.0]
