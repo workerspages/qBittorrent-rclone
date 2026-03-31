@@ -35,7 +35,6 @@
 | `BARK_SERVER` | `https://api.day.app` | Bark通知 服务器地址。 |
 | `BARK_KEY` | `您的Bark设备Key请填在这里` | Bark 密钥。 |
 | `RCLONE_CMD` | *(空)* | rclone move -v "{source_path}" "OneDrive:视频专区/{torrent_name}/" |
-
 | `RCLONE_CONFIG_BASE64`| *(空)* | (可选) 为了方便在平台注入您的 rclone 配置，可以使用 `cat rclone.conf \| base64 -w 0` 获得的完整字符串填入此处，容器启动将自动识别。|
 | `MAX_CONCURRENT_FILES`| *3* | 每个合集（每个独立的种子任务）中同时下载 `3` 个文件。|
 | `ONLY_VIDEO_FILES`| *false* | 设置为 `true` 时，开启纯视频下载模式，种子中所有非视频文件都会被自动标记为“不下载”|
