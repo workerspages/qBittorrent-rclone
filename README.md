@@ -39,7 +39,7 @@
 | `RCLONE_CONFIG_BASE64`| *(空)* | (可选) 为了方便在平台注入您的 rclone 配置，可以使用 `cat rclone.conf \| base64 -w 0` 获得的完整字符串填入此处，容器启动将自动识别。|
 | `MAX_CONCURRENT_FILES`| *3* | 每个合集（每个独立的种子任务）中同时下载 3 个文件。|
 | `ONLY_VIDEO_FILES`| *false* | 设置为 `true` 时，开启纯视频下载模式，种子中所有非视频文件都会被自动标记为“不下载”|
-| `VIDEO_EXTENSIONS`| *mp4,mkv,avi,wmv,mov,ts,rmvb,...* | 自定义被认定为“视频”的扩展名（用英文逗号分隔）|
+| `VIDEO_EXTENSIONS`| *mp4,mkv,avi,...* | 自定义被认定为“视频”的扩展名（用英文逗号分隔）|
 | `MIN_FREE_SPACE_GB`| *10* | 当剩余空间小于 10GB 时就会刹车暂停 |
 
 *(注：由于采用了单端口代理架构，之前的 `WEBDAV_PORT` 变量已弃用，内部已自动接管。)*
