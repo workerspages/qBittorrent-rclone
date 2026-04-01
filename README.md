@@ -47,6 +47,14 @@
 * **注意**：要让这个“暂停-释放-恢复”的循环完全自动化，请确保你的环境变量中设置了 `RCLONE_UPLOAD_MODE=move`。这样一旦有文件下载完成，`entrypoint.sh` 里面的脚本就会把它剪切到网盘，从而腾出本地空间。空间一腾出来，被暂停的种子就会自动继续下载。
 * **常用视频格式**: `mp4,mkv,avi,wmv,mov,ts,rmvb,webm,flv,f4v,m4v,mpg,mpeg,vob,m2ts,mts,3gp,rm,asf,ogv,mxf,dat`  已内置，如无需修改只添加 `ONLY_VIDEO_FILES=true`即开启纯视频下载模式
 
+### 正确的密码修改流程
+
+为了确保网盘安全且自动化脚本正常工作，以后修改密码请遵循以下 4 步：
+
+1. **WebUI 内修改：** 在 qBittorrent 网页端的“设置 -> WebUI”中修改并保存你的新密码。
+2. **修改环境变量：** 去到你的 Docker 部署环境（例如 Portainer 面板、群晖容器管理器、PaaS 平台的环境变量设置，或者本地的 `docker-compose.yml` 文件中）。
+3. **更新明文：** 将 `QBT_PASS` 的值更新为你刚刚设置的**新明文密码**。
+4. **重启/重建容器：** 重新启动该 Docker 容器。容器重启后，后台脚本就会读取到新的密码，和 qBittorrent 本体再次成功“接头”。
 ---
 
 ## 📂 目录结构与数据持久化 (Volumes)
