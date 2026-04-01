@@ -20,6 +20,9 @@
     "影视/综艺": {
         "save_path": "/data/downloads/ok/影视/综艺"
     },
+    "影视/动漫": {
+        "save_path": "/data/downloads/ok/影视/动漫"
+    },
     "影视/纪录片": {
         "save_path": "/data/downloads/ok/影视/纪录片"
     }
