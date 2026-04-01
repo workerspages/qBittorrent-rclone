@@ -57,9 +57,15 @@ if rclone_config_b64:
 
 STATE_FILE = '/data/config/qBittorrent/config/monitor_state.json'
 
+# ================= 增加认证信息，通过环境变量注入密码 =================
+qbt_user = os.environ.get('QBT_USER', 'admin')
+qbt_pass = os.environ.get('QBT_PASS', 'adminadmin')
+
 conn_info = dict(
     host='127.0.0.1',
     port=qbt_port,
+    username=qbt_user,
+    password=qbt_pass
 )
 qbt_client = qbittorrentapi.Client(**conn_info)
 
