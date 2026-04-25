@@ -158,15 +158,18 @@ fi
 
 # =====================================
 
-# 动态注入或更新外部程序执行 (修改为传入 %N 和保存根路径组合的 %D/%N 以供 rclone 获取全路径)
-# qBittorrent 变量： %N (名称)  %D (保存路径，如果是多文件则是父目录，单文件则是文件所在目录)
-# 由于 %D 在不同种子类型下表现存在差异，为兼容性统一传递名称和绝对路径
-# 这里直接传入完整路径参数 %F 和名称 %N
+# 动态注入或更新 OnTorrentFinished 外部程序执行
+# 注意：旧版 Program= 字段在新版 qBittorrent 中表示"添加 torrent 时执行"，不能使用
+# 只使用 OnTorrentFinished\Program= 来确保仅在下载完成后触发通知和上传
+# qBittorrent 变量： %N (名称)  %F (文件完整路径)
 if grep -q "^\[AutoRun\]" "$QBT_CONFIG_FILE"; then
-    sed -i "s|^Program=.*|Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"|g" "$QBT_CONFIG_FILE"
-    sed -i "s/^Enabled=false/Enabled=true/g" "$QBT_CONFIG_FILE"
+    # 清理旧版字段，防止添加任务时误触发通知
+    sed -i '/^Program=.*/d' "$QBT_CONFIG_FILE"
+    sed -i '/^Enabled=.*/d' "$QBT_CONFIG_FILE"
+    sed -i '/^enabled=.*/d' "$QBT_CONFIG_FILE"
+    sed -i '/^program=.*/d' "$QBT_CONFIG_FILE"
     
-    # 兼容最新版配置字段
+    # 注入或更新 OnTorrentFinished 字段
     if grep -q "^OnTorrentFinished\\\\Program=" "$QBT_CONFIG_FILE"; then
         sed -i "s|^OnTorrentFinished\\\\Program=.*|OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"|g" "$QBT_CONFIG_FILE"
         sed -i "s/^OnTorrentFinished\\\\Enabled=false/OnTorrentFinished\\\\Enabled=true/g" "$QBT_CONFIG_FILE"
@@ -174,7 +177,7 @@ if grep -q "^\[AutoRun\]" "$QBT_CONFIG_FILE"; then
         sed -i "/\[AutoRun\]/a OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"\nOnTorrentFinished\\\\Enabled=true" "$QBT_CONFIG_FILE"
     fi
 else
-    echo -e "\n[AutoRun]\nEnabled=true\nProgram=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"\nOnTorrentFinished\\\\Enabled=true\nOnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"" >> "$QBT_CONFIG_FILE"
+    echo -e "\n[AutoRun]\nOnTorrentFinished\\\\Enabled=true\nOnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"" >> "$QBT_CONFIG_FILE"
 fi
 
 # ==========================================
