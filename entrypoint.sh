@@ -176,26 +176,23 @@ fi
 
 # =====================================
 
-# 动态注入或更新 OnTorrentFinished 外部程序执行
-# 注意：旧版 Program= 字段在新版 qBittorrent 中表示"添加 torrent 时执行"，不能使用
-# 只使用 OnTorrentFinished\Program= 来确保仅在下载完成后触发通知和上传
-# qBittorrent 变量： %N (名称)  %F (文件完整路径)
+# 动态注入或更新 torrent 完成时运行 的外部程序
 if grep -q "^\[AutoRun\]" "$QBT_CONFIG_FILE"; then
-    # 清理旧版字段，防止添加任务时误触发通知
+    # 清理掉错误的 OnTorrentFinished 字段
+    sed -i '/^OnTorrentFinished/d' "$QBT_CONFIG_FILE"
+    # 清理大写的遗留字段
     sed -i '/^Program=.*/d' "$QBT_CONFIG_FILE"
     sed -i '/^Enabled=.*/d' "$QBT_CONFIG_FILE"
-    sed -i '/^enabled=.*/d' "$QBT_CONFIG_FILE"
-    sed -i '/^program=.*/d' "$QBT_CONFIG_FILE"
     
-    # 注入或更新 OnTorrentFinished 字段
-    if grep -q "^OnTorrentFinished\\\\Program=" "$QBT_CONFIG_FILE"; then
-        sed -i "s|^OnTorrentFinished\\\\Program=.*|OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"|g" "$QBT_CONFIG_FILE"
-        sed -i "s/^OnTorrentFinished\\\\Enabled=false/OnTorrentFinished\\\\Enabled=true/g" "$QBT_CONFIG_FILE"
+    # 正确注入小写的 enabled 和 program (对应"完成时运行")
+    if grep -q "^program=" "$QBT_CONFIG_FILE"; then
+        sed -i "s|^program=.*|program=sh ${NOTIFY_SCRIPT} \\\"%N\\\" \\\"%F\\\"|g" "$QBT_CONFIG_FILE"
+        sed -i "s/^enabled=false/enabled=true/g" "$QBT_CONFIG_FILE"
     else
-        sed -i "/\[AutoRun\]/a OnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"\nOnTorrentFinished\\\\Enabled=true" "$QBT_CONFIG_FILE"
+        sed -i "/\[AutoRun\]/a program=sh ${NOTIFY_SCRIPT} \\\"%N\\\" \\\"%F\\\"\nenabled=true" "$QBT_CONFIG_FILE"
     fi
 else
-    echo -e "\n[AutoRun]\nOnTorrentFinished\\\\Enabled=true\nOnTorrentFinished\\\\Program=sh ${NOTIFY_SCRIPT} \"%N\" \"%F\"" >> "$QBT_CONFIG_FILE"
+    echo -e "\n[AutoRun]\nenabled=true\nprogram=sh ${NOTIFY_SCRIPT} \\\"%N\\\" \\\"%F\\\"" >> "$QBT_CONFIG_FILE"
 fi
 
 # ==========================================
